@@ -1,5 +1,5 @@
 # kNowLexP (knowledge exploration with NLP)
-This is a Python module that I developed while conducting my own research about different topics on information sources in natural language. 
+This is a Python module that I developed while conducting my own research about different topics on information sources that were in natural language. 
 It contains several functions and classes that I have found useful to process and extract information mainly from PDF files. 
 The module combines Spacy, Haystack and Huggingface models for things such as creating a knowledge graph, extracting related tables and figures, QA, etc.
 I intended it to just "get things done" as simply and straightforwardly as possible at the expense of tweaking and minor details. Some examples of what it can do and how below.
@@ -30,7 +30,7 @@ by passing `clean = False`, not recommended).
  (working on making it more accurate). `relations()` will return the triplets as a list of tuples as well as a list of dictionaries that contains the full details
  (triplet, original sentence the triplet was extracted from and document name).
  
- **Example: extracting references to 'infrared' (case insensitive) and its relations from a 67 pages report of a NASA workshop on the search from technological signals from outer space. 
+ **Example: extracting references to 'infrared' (case insensitive) and its relations from a 67 pages report of a NASA workshop on the search of technological signals from outer space. 
  In the results we can see interesting references to waste heat, M-dwarf stars, dust, infrared excesses, etc**. 
  
 https://user-images.githubusercontent.com/108660081/200918907-56e15096-61b8-41e1-ac9e-4460272fd123.mp4
@@ -53,17 +53,44 @@ https://user-images.githubusercontent.com/108660081/200918907-56e15096-61b8-41e1
 https://user-images.githubusercontent.com/108660081/200921233-21c367de-625f-4d59-956f-83c88498da49.mp4
 
 
+## Question Answering and Summarization
+
+Here we leverage huge language models in Huggingface and the integration easiness of the NLP framework Haystack by Deepset to be able to obtain answers directly extracted from
+the different documents to questions formulated in natural language, as well as summarization. Although it can be used in a CPU, a GPU should be used for reasonable execution times. Here question answering is extractive and summarization abstractive, I 
+personally find this approach to be the best given the current state of the art and the use case at hand. To implement this we just create an object of the class
+`QAandSummary` passing a list of those of our preprocessed documents we want to get answers from or summarize. The object will use as models "deepset/roberta-base-squad2" for QA
+and "facebook/bart-large-xsum" for summarization, these are personal preferences and can be changed by setting the attributes self.reader_model and self.summarizer_model,
+respectively. For example, another popular model is Pegasus by Google, we could choose it by doing `our_object_name.summarizer_model = 'google/pegasus-xsum'`, that is,
+just passing its name in Huggingface as a string. We can now just make a question with the method `ask()` or summarize each document with the method `summarize()`. We
+can also change the documents stored by the object using `overwrite()`, this will eliminate the documents contained and add the new ones passed, we can check the documents
+we are getting answers from/summarizing at any time by checking the attribute docs.
+
+Finally, it is worth mentioning the arguments ret_top_k=20 and read_top_k=10 from `ask()` which set the number of document candidates to shortlist for furher analysis
+(20) and the maximum number of answers to return (10), respectively, as well as the argument min_length from `summarize()` which sets the minimum length of the summary.
+These argument can help to fine-tune and narrow down our answers and summaries depending on the number and length of documents, possible different answers, etc.
+
+**Example: creating a `QAandSummary` object with three papers about solar cells, check the documents it contains and ask about efficiencies of solar cells**.
+
+https://user-images.githubusercontent.com/108660081/200935457-99cf8de4-e519-49f4-b5a0-88775b2be3d3.mp4
+
+
  ## Visual information (tables and figures)
  
  Figures, charts and tables are usually a part very rich in information of any scientific paper. The idea here is not to use image/table extraction but the description
  in the footer of each visual element to find and extract the data we are insterested in, in this way we are leveraging an accurate human-written description to find
- relevant visual information instead of using more expensive image recognition, etc. For this, after creating an object of the class `Visuals` by passing the path 
+ relevant visual information instead of using more expensive image recognition. For this, after creating an object of the class `Visuals` by passing the path 
  (file or directory) to the document/s we want to extract tables and figures from, we can apply 3 methods: `get_descriptions()` (returns and stores in the attribute 
  self.descriptions all the figure/table footers in a list of dictionaries together with some useful metadata), `find_related()` (takes a string as input and returns and
  stores in the attribute self.scores a list ordered by relevance score of the footers related to the inputted string) and `get_pages()` (displays the PDF images themselves
  for visual inspection, they will be displayed in the order found in the attribute self.scores (most relevant first), the number of elements displayed can be limited
  (recommended) by passing top=(integer number of top results to display) or indexes=(list of indexes of the specific figures/tables to display)).
  
+ **Example: obtaining table data and images related to impact testing from several papers and a dissertation on the use of (mainly) titanium as bullet-proof material and displaying
+ the pages of the first 10 results**.
+
+https://user-images.githubusercontent.com/108660081/200926313-d10ba696-3a35-41cb-a831-820da6915f9a.mp4
+
+
 
 ## Terminology
 
@@ -76,21 +103,8 @@ table is in to `make_termlist()` and playing around with the argument table_inde
 to the argument header to get a list of the terms of interest. We can now pass a list of our preprocessed documents and our list of terms to `term_count()` to know which terms appear and
 how many times in each document.
 
+**Example: creating a list of semiconductor materials from Wikipedia and finding out which are mentioned in which documents**.
 
-## Question Answering and Summarization
-
-Here we leverage huge language models in Huggingface and the integration easiness of the NLP framework Haystack by Deepset to be able to obtain answers directly extracted from
-the different documents to questions formulated in natural language, as well as summarization. Here question answering is extractive and summarization abstractive, I 
-personally find this approach to be the best given the current state of the art and the use case at hand. To implement this we just create an object of the class
-`QAandSummary` passing a list of those of our preprocessed documents we want to get answers from or summarize. The object will use as models "deepset/roberta-base-squad2" for QA
-and "facebook/bart-large-xsum" for summarization, these are personal preferences and can be changed by setting the attributes self.reader_model and self.summarizer_model,
-respectively. For example, another popular model is Pegasus by Google, we could choose it by doing `our_object_name.summarizer_model = 'google/pegasus-xsum'`, that is,
-just passing its name in Huggingface as a string. We can now just make a question with the method `ask()` or summarize each document with the method `summarize()`. We
-can also change the documents stored by the object using `overwrite()`, this will eliminate the documents contained and add the new ones passed, we can check the documents
-we are getting answers from/summarizing at any time by checking the attribute docs.
-
-Finally, it is worth mentioning the arguments ret_top_k=20 and read_top_k=10 from `ask()` which set the number of document candidates to shortlist for furher analysis
-(20) and the maximum number of answers to return (10), respectively, as well as the argument min_length from `summarize()` which sets the minimum length of the summary.
-These argument can help to fine-tune and narrow down our answers and summaries depending on the number and length of documents, possible answers, etc.
+https://user-images.githubusercontent.com/108660081/200931988-088c7c9a-52a9-4ee0-b13d-8d38fe75b8f8.mp4
 
 
